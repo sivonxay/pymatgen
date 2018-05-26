@@ -1626,6 +1626,89 @@ class MITMDSet(MITRelaxSet):
         return Kpoints.gamma_automatic()
 
 
+class TemperingMDSet(MITRelaxSet):
+    """
+    Class for writing a VASP Parallel Tempering/ Replica Exchange run.
+    """
+    def __init__(self, structure, temperatures, nsteps, swap_steps=200,
+                 time_step=2, spin_polarized=False, **kwargs):
+        """
+        Args:
+            structure (Structure): Input structure.
+            temperatures (list(int)): list of tempering temperatures
+            nsteps (int): Number of time steps for simulations. The NSW parameter.
+            swap_steps (int): Number of time steps between attempted swaps.
+            time_step (int): The time step for the simulation. The POTIM
+                parameter. Defaults to 2fs.
+            \\*\\*kwargs: Other kwargs supported by :class:`DictSet`.
+        """
+        user_incar_settings = kwargs.get("user_incar_settings", {})
+
+        defaults = {"LTEMPER": True, "NTEMPER": swap_steps, 'NSW': nsteps,
+                    'EDIFF_PER_ATOM': 0.000001, 'LSCALU': False,
+                    'LCHARG': False, "LWAVE": False,
+                    'LPLANE': False, 'LWAVE': True, 'ISMEAR': 0,
+                    'NELMIN': 4, 'LREAL': True, 'BMIX': 1,
+                    'MAXMIX': 20, 'NELM': 500, 'NSIM': 4, 'ISYM': 0,
+                    'ISIF': 2, 'IBRION': 0, 'NBLOCK': 1, 'KBLOCK': 100,
+                    'SMASS': 0, 'POTIM': time_step, 'PREC': 'Low',
+                    'ISPIN': 2 if spin_polarized else 1,
+                    "LDAU": False}
+        defaults.update(user_incar_settings)
+        kwargs["user_incar_settings"] = defaults
+
+        super(TemperingMDSet, self).__init__(structure, **kwargs)
+
+        self.temperatures = temperatures
+        self.nsteps = nsteps
+        self.time_step = time_step
+        self.spin_polarized = spin_polarized
+        self.kwargs = kwargs
+
+        # use VASP default ENCUT
+        self._config_dict["INCAR"].pop('ENCUT', None)
+
+        if defaults['ISPIN'] == 1:
+            self._config_dict["INCAR"].pop('MAGMOM', None)
+        self._config_dict["INCAR"].update(defaults)
+
+    @property
+    def kpoints(self):
+        return Kpoints.gamma_automatic()
+
+    def write_input(self, output_dir, make_dir_if_not_present=True):
+        """
+        Parallel Tempering inputs have a special directory structure where each image is
+        in a sub-folder (01, 02, ....)
+
+        Args:
+            output_dir (str): Directory to output the VASP input files
+            make_dir_if_not_present (bool): Set to True if you want the
+                directory (and the whole path) to be created if it is not
+                present.
+            write_cif (bool): If true, writes a cif along with each POSCAR.
+            write_path_cif (bool): If true, writes a cif for each image.
+            write_endpoint_inputs (bool): If true, writes input files for
+                running endpoint calculations.
+        """
+
+        if make_dir_if_not_present and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        root_incar = Incar({"IMAGES": len(self.temperatures)})
+        root_incar.write_file(os.path.join(output_dir, 'INCAR'))
+        self.kpoints.write_file(os.path.join(output_dir, 'KPOINTS'))
+        self.potcar.write_file(os.path.join(output_dir, 'POTCAR'))
+
+        for i, t in enumerate(self.temperatures):
+            d = os.path.join(output_dir, str(i+1).zfill(2))
+            if not os.path.exists(d):
+                os.makedirs(d)
+            self.poscar.write_file(os.path.join(d, 'POSCAR'))
+            temps = {"TEBEG": t, "TEEND": t}
+            self._config_dict["INCAR"].update(temps)
+            self.incar.write_file(os.path.join(d, 'INCAR'))
+
+
 class MVLNPTMDSet(MITMDSet):
     """
     Class for writing a vasp md run in NPT ensemble.
