@@ -1630,11 +1630,11 @@ class TemperingMDSet(MITRelaxSet):
     """
     Class for writing a VASP Parallel Tempering/ Replica Exchange run.
     """
-    def __init__(self, structure, temperatures, nsteps, swap_steps=200,
+    def __init__(self, structures, temperatures, nsteps, swap_steps=200,
                  time_step=2, spin_polarized=False, **kwargs):
         """
         Args:
-            structure (Structure): Input structure.
+            structures (Structure): Input structure or list of input structures
             temperatures (list(int)): list of tempering temperatures
             nsteps (int): Number of time steps for simulations. The NSW parameter.
             swap_steps (int): Number of time steps between attempted swaps.
@@ -1657,8 +1657,12 @@ class TemperingMDSet(MITRelaxSet):
         defaults.update(user_incar_settings)
         kwargs["user_incar_settings"] = defaults
 
-        super(TemperingMDSet, self).__init__(structure, **kwargs)
+        if type(structures) == Structure:
+            structures = [structures for temp in temperatures]
 
+        super(TemperingMDSet, self).__init__(structures[0], **kwargs)
+
+        self.structures = structures
         self.temperatures = temperatures
         self.nsteps = nsteps
         self.time_step = time_step
@@ -1671,6 +1675,14 @@ class TemperingMDSet(MITRelaxSet):
         if defaults['ISPIN'] == 1:
             self._config_dict["INCAR"].pop('MAGMOM', None)
         self._config_dict["INCAR"].update(defaults)
+
+    @property
+    def poscar(self):
+        return Poscar(self.structures[0])
+
+    @property
+    def poscars(self):
+        return [Poscar(s) for s in self.structures]
 
     @property
     def kpoints(self):
@@ -1703,7 +1715,7 @@ class TemperingMDSet(MITRelaxSet):
             d = os.path.join(output_dir, str(i+1).zfill(2))
             if not os.path.exists(d):
                 os.makedirs(d)
-            self.poscar.write_file(os.path.join(d, 'POSCAR'))
+            self.poscars[i].write_file(os.path.join(d, 'POSCAR'))
             temps = {"TEBEG": t, "TEEND": t}
             self._config_dict["INCAR"].update(temps)
             self.incar.write_file(os.path.join(d, 'INCAR'))
