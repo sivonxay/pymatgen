@@ -1,8 +1,12 @@
 from pymatgen.core.structure import Structure
 from monty.json import MSONable
 from monty.functools import lru_cache
+from pymatgen.io.vasp.outputs import Xdatcar
+from pymatgen.core.trajectory import Trajectory
+from monty.re import regrep
+from copy import deepcopy
 import numpy as np
-
+import bisect
 
 class Trajectory(MSONable):
     def __init__(self, base_structure, displacements, site_properties):
@@ -155,3 +159,111 @@ class TemperingTrajectory(MSONable):
     def from_dict(cls, d):
         trajectories = [Trajectory.from_dict(trajectory_dict) for trajectory_dict in d["trajectories"]]
         return cls(d["data"], trajectories)
+
+    @classmethod
+    def from_vasp_run(cls, directory, nimages):
+        """
+        Convenience constructor to make a Trajectory from a list of Structures
+        :param ionic_steps_dict:
+        :return:
+        """
+        raw_data = parse_outcar(directory, nimages)
+        data, trajectories = process_vasp_data(raw_data, directory, nimages)
+        return cls(data, trajectories)
+
+
+def parse_outcar(directory, nimages):
+    filename = directory + str(1).zfill(2) + "/OUTCAR"
+    patterns = {"NTEMPER": r"parallel\stempering\sroutine\sentered\sNSTEP+=,\sNTEMPER+=\s+([\d\-.]+)\s+([\d\-.]+)",
+                "Acceptance Ratio": r"Acceptance\sratio\sfor\sswaps" + "\s+([\d\-.]+)" * (nimages - 1),
+                "old TEBEG": r"parallel\stempering\sold\sTEBEG" + "\s+([\d\-.]+)" * nimages,
+                "new TEBEG": r"parallel\stempering\snew\sTEBEG" + "\s+([\d\-.]+)" * nimages,
+                "old TOTEN": r"parallel\stempering\sold\sTOTEN" + "\s+([\d\-.]+)" * nimages,
+                "attempt": r"attempting\sswapping\s+([\d\-.]+)",
+                "dT": r"1/T1-1/T2\s+([\d\-.]+)",
+                "dE": r"E1\s+-E2\s+([\d\-.]+)",
+                "random_num": r"random\s+([\d\-.]+)",
+                "success": r"swapping\s+([\d\-.]+)",
+                "failure": r"noswapping\s+([\d\-.]+)"}
+
+    return regrep(filename, patterns)
+
+
+def process_vasp_data(raw_data, directory, nimages):
+    processing_data = deepcopy(raw_data)
+    data = {}
+
+    # Identify swap steps
+    step_lines = [line[1] for line in processing_data["NTEMPER"]]
+    swap_lines = [line for line_data, line in processing_data["Acceptance Ratio"]]
+    data["nswap"] = [bisect.bisect_right(step_lines, i) for i in swap_lines]
+
+    # clean up raw data
+    for line in processing_data["attempt"]:
+        swap_bool_lines = [line[1] for line in processing_data["success"]]
+        index = bisect.bisect_left(swap_bool_lines, line[1])
+        del processing_data["success"][index]
+
+    success_fail = []
+    failure_lines = [line[1] for line in processing_data["failure"]]
+    for line in processing_data["success"]:
+        if line[1] in failure_lines:
+            success = False
+        else:
+            success = True
+        index = bisect.bisect_right(swap_lines, line[1])
+        success_fail.append((data["nswap"][index], line[0][0], success))
+
+    # # Remove line number information from raw data and add to data
+    #         for k in patterns.keys():
+    #             data[k] = [i[0] for i in processing.raw_data.get(k, [])]
+
+    swap_steps = {}
+    for attempt in zip(success_fail, raw_data["dT"], raw_data["dE"], raw_data["random_num"]):
+        step_num = attempt[0][0]
+        if step_num not in swap_steps.keys():
+            swap_steps[step_num] = []
+        doc = {"dT": float(attempt[1][0][0]),
+               "dE": float(attempt[2][0][0]),
+               "random_number": float(attempt[3][0][0]),
+               "swap_id": int(attempt[0][1]),
+               "swap_bool": attempt[0][2]}
+        swap_steps[step_num].append(doc)
+    data["swap_steps"] = swap_steps
+
+    temps = [[int(float(i)) for i in processing_data["old TEBEG"][0][0]]]
+    for i in range(len(data["nswap"]) - 1):
+        temps.extend(
+            [[int(float(i)) for i in processing_data["new TEBEG"][i][0]]] * (data["nswap"][i + 1] - data["nswap"][i]))
+    nsteps = 100
+    temps.extend([[int(float(i)) for i in processing_data["new TEBEG"][i][0]]] * (nsteps - data["nswap"][i] - 2))
+    image_swap_path = np.transpose(temps)
+    data["image_trajectories"] = temps
+
+    structures = [None for i in range(nimages)]
+    for i, temp in enumerate(temps[0]):
+        filename = directory + str(i + 1).zfill(2) + "/XDATCAR"
+        xdc = Xdatcar(filename)
+        structures[i] = xdc.structures
+
+    get_index = lambda x: temps[0].index(x)
+    structures_reconstructed = [[] for i in range(nimages)]
+    for image in range(nimages):
+        for i, temp in enumerate(image_swap_path[image]):
+            try:
+                structures_reconstructed[image].append(structures[get_index(temp)][i])
+            except:
+                print(i)
+
+    trajectories = []
+    for structures_image in structures:
+        trajectories.append(Trajectory.from_structures(structures_image))
+
+    # attempt_step = [bisect.bisect_right(step_lines, attempt[1]) for attempt in raw_data["attempt"]]
+    #         print(attempt_step)
+    #         for swap in data["success"][::2]:
+    #             print(swap)
+
+    data["acceptance"] = [i[0] for i in processing_data.get("Acceptance Ratio", [])]
+    data["temperatures"] = temps[0]
+    return data, trajectories
