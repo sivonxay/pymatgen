@@ -2,7 +2,6 @@ from pymatgen.core.structure import Structure
 from monty.json import MSONable
 from monty.functools import lru_cache
 from pymatgen.io.vasp.outputs import Xdatcar
-from pymatgen.core.trajectory import Trajectory
 from monty.re import regrep
 from copy import deepcopy
 import numpy as np
