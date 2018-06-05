@@ -6,6 +6,7 @@ from monty.re import regrep
 from copy import deepcopy
 import numpy as np
 import bisect
+import os
 
 class Trajectory(MSONable):
     def __init__(self, base_structure, displacements, site_properties):
@@ -160,12 +161,22 @@ class TemperingTrajectory(MSONable):
         return cls(d["data"], trajectories)
 
     @classmethod
-    def from_vasp_run(cls, directory, nimages):
+    def from_vasp_run(cls, directory):
         """
         Convenience constructor to make a Trajectory from a list of Structures
         :param ionic_steps_dict:
         :return:
         """
+
+        def is_number(s):
+            try:
+                float(s)
+                return True
+            except ValueError:
+                return False
+
+        nimages = sum(os.path.isdir(i) and is_number(i) for i in os.listdir("./"))
+
         raw_data = parse_outcar(directory, nimages)
         data, trajectories = process_vasp_data(raw_data, directory, nimages)
         return cls(data, trajectories)
