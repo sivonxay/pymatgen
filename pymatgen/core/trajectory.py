@@ -113,3 +113,45 @@ class Trajectory(MSONable):
         structure = Structure.from_dict(d["structure"])
         return cls(structure, np.array(d["displacements"]), d["site_properties"])
 
+
+class TemperingTrajectory(MSONable):
+    def __init__(self, data, trajectories):
+        self.data = data
+        self.trajectories = trajectories
+
+    def swap_probability(self):
+        return self.data["acceptance"][-1]
+
+    def get_trajectory(self, temperature):
+        _index = self.get_temperatures().index(temperature)
+        return self.trajectories[_index]
+
+    def get_temperatures(self):
+        return self.data["temperatures"]
+
+    def plot_swaps(self, show_attempts=False):
+        from matplotlib import pyplot as plt
+        image_trajectories = self.data["image_trajectories"]
+        for i in np.transpose(image_trajectories):
+            plt.plot(i)
+
+        if show_attempts:
+            for i in self.data["nswap"]:
+                plt.plot([i, i], [min(self.get_temperatures()), max(self.get_temperatures())], '--')
+        plt.xticks(fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.xlabel("time step (#)", fontsize=18)
+        plt.ylabel("Temperature", fontsize=18)
+        plt.show()
+
+    def as_dict(self):
+        d = {"@module": self.__class__.__module__,
+             "@class": self.__class__.__name__}
+        d["data"] = self.data
+        d["trajectories"] = [trajectory.as_dict() for trajectory in self.trajectories]
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        trajectories = [Trajectory.from_dict(trajectory_dict) for trajectory_dict in d["trajectories"]]
+        return cls(d["data"], trajectories)
