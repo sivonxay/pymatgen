@@ -297,9 +297,9 @@ def process_vasp_data(raw_data, directory, nimages):
             except:
                 print(i)
 
-    trajectories = []
-    for structures_image in structures:
-        trajectories.append(Trajectory.from_structures(structures_image))
+    trajectories = {}
+    for temp, structures_image in zip(temps[0], structures):
+        trajectories[temp] = Trajectory.from_structures(structures_image)
 
     # attempt_step = [bisect.bisect_right(step_lines, attempt[1]) for attempt in raw_data["attempt"]]
     #         print(attempt_step)
