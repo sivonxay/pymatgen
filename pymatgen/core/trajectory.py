@@ -173,7 +173,7 @@ class TemperingTrajectory(MSONable):
 
         if show_attempts:
             for i in self.data["nswap"]:
-                plt.plot([i, i], [min(self.get_temperatures()), max(self.get_temperatures())], '--')
+                plt.plot([i, i], [min(self.get_temperatures()), max(self.get_temperatures())], '--k', linewidth=1)
         plt.xticks(fontsize=14)
         plt.yticks(fontsize=14)
         plt.xlabel("time step (#)", fontsize=18)
