@@ -305,7 +305,7 @@ def process_vasp_data(raw_data, directory, nimages):
     #         print(attempt_step)
     #         for swap in data["success"][::2]:
     #             print(swap)
-
+    data["old TOTEN"] = [i[0] for i in processing_data.get("old TOTEN", [])]
     data["acceptance"] = [i[0] for i in processing_data.get("Acceptance Ratio", [])]
     data["temperatures"] = temps[0]
     return data, trajectories
