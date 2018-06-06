@@ -256,10 +256,6 @@ def process_vasp_data(raw_data, directory, nimages):
         index = bisect.bisect_right(swap_lines, line[1])
         success_fail.append((data["nswap"][index], line[0][0], success))
 
-    # # Remove line number information from raw data and add to data
-    #         for k in patterns.keys():
-    #             data[k] = [i[0] for i in processing.raw_data.get(k, [])]
-
     swap_steps = {}
     for attempt in zip(success_fail, raw_data["dT"], raw_data["dE"], raw_data["random_num"]):
         step_num = attempt[0][0]
