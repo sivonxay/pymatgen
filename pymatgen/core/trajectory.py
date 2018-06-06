@@ -123,6 +123,38 @@ class TemperingTrajectory(MSONable):
         self.data = data
         self.trajectories = trajectories
 
+        self.index = 0
+
+    def get_structures(self):
+        structures = {}
+        for key, trajectory in self.trajectories.items():
+            structures[key] = trajectory.structure
+        return structures
+
+    def change_index(self, index):
+        try:
+            for key, trajectory in self.trajectories.items():
+                trajectory.change_index(index)
+            self.index = index
+        except:
+            raise Exception("Requested index is out of bounds")
+
+    def change_next(self):
+        try:
+            for key, trajectory in self.trajectories.items():
+                trajectory.change_next()
+            self.index = index
+        except:
+            raise Exception("Error: Already at the end of the trajectory")
+
+    def change_previous(self, index):
+        try:
+            for key, trajectory in self.trajectories.items():
+                trajectory.change_previous(index)
+            self.index = index
+        except:
+            raise Exception("Error: Already at the start of the trajectory")
+
     def swap_probability(self):
         return self.data["acceptance"][-1]
 
