@@ -207,7 +207,7 @@ class TemperingTrajectory(MSONable):
             except ValueError:
                 return False
 
-        nimages = sum(os.path.isdir(i) and is_number(i) for i in os.listdir("./"))
+        nimages = sum(os.path.isdir(i) and is_number(i) for i in os.listdir(directory))
 
         raw_data = parse_outcar(directory, nimages)
         data, trajectories = process_vasp_data(raw_data, directory, nimages, load_structs)
