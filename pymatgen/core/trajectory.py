@@ -193,7 +193,7 @@ class TemperingTrajectory(MSONable):
         return cls(d["data"], trajectories)
 
     @classmethod
-    def from_vasp_run(cls, directory):
+    def from_vasp_run(cls, directory, load_structs=False):
         """
         Convenience constructor to make a Trajectory from a list of Structures
         :param ionic_steps_dict:
@@ -210,7 +210,7 @@ class TemperingTrajectory(MSONable):
         nimages = sum(os.path.isdir(i) and is_number(i) for i in os.listdir("./"))
 
         raw_data = parse_outcar(directory, nimages)
-        data, trajectories = process_vasp_data(raw_data, directory, nimages)
+        data, trajectories = process_vasp_data(raw_data, directory, nimages, load_structs)
         return cls(data, trajectories)
 
 
@@ -231,7 +231,7 @@ def parse_outcar(directory, nimages):
     return regrep(filename, patterns)
 
 
-def process_vasp_data(raw_data, directory, nimages):
+def process_vasp_data(raw_data, directory, nimages, load_structs=False):
     processing_data = deepcopy(raw_data)
     data = {}
 
@@ -278,24 +278,25 @@ def process_vasp_data(raw_data, directory, nimages):
     image_swap_path = np.transpose(temps)
     data["image_trajectories"] = temps
 
-    structures = [None for i in range(nimages)]
-    for i, temp in enumerate(temps[0]):
-        filename = directory + str(i + 1).zfill(2) + "/XDATCAR"
-        xdc = Xdatcar(filename)
-        structures[i] = xdc.structures
-
-    get_index = lambda x: temps[0].index(x)
-    structures_reconstructed = [[] for i in range(nimages)]
-    for image in range(nimages):
-        for i, temp in enumerate(image_swap_path[image]):
-            try:
-                structures_reconstructed[image].append(structures[get_index(temp)][i])
-            except:
-                print(i)
-
     trajectories = {}
-    for temp, structures_image in zip(temps[0], structures):
-        trajectories[temp] = Trajectory.from_structures(structures_image)
+    if load_structs:
+        structures = [None for i in range(nimages)]
+        for i, temp in enumerate(temps[0]):
+            filename = directory + str(i + 1).zfill(2) + "/XDATCAR"
+            xdc = Xdatcar(filename)
+            structures[i] = xdc.structures
+
+        get_index = lambda x: temps[0].index(x)
+        structures_reconstructed = [[] for i in range(nimages)]
+        for image in range(nimages):
+            for i, temp in enumerate(image_swap_path[image]):
+                try:
+                    structures_reconstructed[image].append(structures[get_index(temp)][i])
+                except:
+                    print(i)
+
+        for temp, structures_image in zip(temps[0], structures):
+            trajectories[temp] = Trajectory.from_structures(structures_image)
 
     # attempt_step = [bisect.bisect_right(step_lines, attempt[1]) for attempt in raw_data["attempt"]]
     #         print(attempt_step)
