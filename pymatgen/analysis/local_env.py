@@ -11,6 +11,7 @@ import six
 import ruamel.yaml as yaml
 import os
 import json
+from copy import deepcopy
 
 from pymatgen.analysis.molecule_structure_comparator import CovalentRadius
 from pymatgen.core.sites import PeriodicSite
@@ -1074,7 +1075,10 @@ def solid_angle(center, coords):
             r_norm[j] * np.dot(r[0], r[i]) + \
             r_norm[i] * np.dot(r[0], r[j]) + \
             r_norm[0] * np.dot(r[i], r[j])
-        my_angle = np.arctan(tp / de)
+        if de == 0:
+            my_angle = 0.5 * pi if tp > 0 else -0.5 * pi
+        else:
+            my_angle = np.arctan(tp / de)
         angle += (my_angle if my_angle > 0 else my_angle + np.pi) * 2
 
     return angle
@@ -1399,14 +1403,14 @@ class LocalStructOrderParams(object):
 
         self._params = []
         for i, t in enumerate(self._types):
-            d = default_op_params[t].copy() if default_op_params[t] is not None \
+            d = deepcopy(default_op_params[t]) if default_op_params[t] is not None \
                 else None
             if parameters is None:
                 self._params.append(d)
             elif parameters[i] is None:
                 self._params.append(d)
             else:
-                self._params.append(parameters[i].copy())
+                self._params.append(deepcopy(parameters[i]))
 
         self._computerijs = self._computerjks = self._geomops = False
         self._geomops2 = self._boops = False
