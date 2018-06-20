@@ -1491,7 +1491,10 @@ class Outcar(MSONable):
                     nelect = float(m.group(1))
                 m = mag_patt.search(clean)
                 if m:
-                    total_mag = float(m.group(1))
+                    try:
+                        total_mag = float(m.group(1))
+                    except:
+                        print("magnetization on line: ", clean, " could not be read")
                 if total_energy is None:
                     m = toten_pattern.search(clean)
                     if m:
