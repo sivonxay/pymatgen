@@ -161,6 +161,28 @@ class Trajectory(MSONable):
         Return:
             (Trajectory, Structure) Subset of trajectory
         """
+        # If trajectory is in displacement mode, return the displacements at that frame
+        if self.coords_are_displacement:
+            if isinstance(frames, int) and frames < np.shape(self.frac_coords)[0]:
+                return self.frac_coords[frames]
+
+            if isinstance(frames, slice):
+                frames = np.arange(frames.start, frames.stop, frames.step)
+            elif not (isinstance(frames, list) or isinstance(frames, np.ndarray)):
+                try:
+                    frames = np.asarray(frames)
+                except:
+                    raise Exception('Given accessor is not of type int, slice, tuple, list, or array')
+
+            if (isinstance(frames, list) or isinstance(frames, np.ndarray)) and \
+                    (np.asarray([frames]) < np.shape(self.frac_coords)[0]).all():
+                return self.frac_coords[frames, :]
+            else:
+                warnings.warn('Some or all selected frames exceed trajectory length')
+            return
+
+        # If trajectory is in positions mode, return a structure for the given frame or trajectory for the given frames
+
         if isinstance(frames, int) and frames < np.shape(self.frac_coords)[0]:
             lattice = self.lattice if self.constant_lattice else self.lattice[frames]
             site_properties = self.site_properties[frames] if self.site_properties else None
