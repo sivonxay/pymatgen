@@ -76,7 +76,7 @@ class Trajectory(MSONable):
         self.coords_are_displacement = coords_are_displacement
 
         if not constant_lattice and np.shape(lattice) == (3, 3):
-            self.lattice = [lattice for i in range(self.frac_coords.shape[0])]
+            self.lattice = [lattice for i in range(np.shape(self.frac_coords)[0])]
         else:
             self.lattice = lattice
         self.constant_lattice = constant_lattice
@@ -139,13 +139,13 @@ class Trajectory(MSONable):
 
         self.frac_coords = np.concatenate((self.frac_coords, trajectory.frac_coords), axis=0)
         self.lattice, self.constant_lattice = self._combine_attribute(self.lattice, trajectory.lattice,
-                                                                      self.frac_coords.shape[0],
-                                                                      trajectory.frac_coords.shape[0])
+                                                                      np.shape(self.frac_coords)[0],
+                                                                      np.shape(trajectory.frac_coords)[0])
         self.site_properties = self._combine_attribute(self.site_properties, trajectory.site_properties,
-                                                       self.frac_coords.shape[0], trajectory.frac_coords.shape[0])
+                                                       np.shape(self.frac_coords)[0], np.shape(trajectory.frac_coords))
 
     def __iter__(self):
-        for i in range(self.frac_coords.shape[0]):
+        for i in range(np.shape(self.frac_coords)[0]):
             yield self[i]
 
     def __len__(self):
@@ -161,7 +161,7 @@ class Trajectory(MSONable):
         Return:
             (Trajectory, Structure) Subset of trajectory
         """
-        if isinstance(frames, int) and frames < self.frac_coords.shape[0]:
+        if isinstance(frames, int) and frames < np.shape(self.frac_coords)[0]:
             lattice = self.lattice if self.constant_lattice else self.lattice[frames]
             site_properties = self.site_properties[frames] if self.site_properties else None
             return Structure(Lattice(lattice), self.species, self.frac_coords[frames], site_properties=site_properties,
@@ -176,7 +176,7 @@ class Trajectory(MSONable):
                 raise Exception('Given accessor is not of type int, slice, tuple, list, or array')
 
         if (isinstance(frames, list) or isinstance(frames, np.ndarray)) and \
-                (np.asarray([frames]) < self.frac_coords.shape[0]).all():
+                (np.asarray([frames]) < np.shape(self.frac_coords)[0]).all():
             if self.constant_lattice:
                 lattice = self.lattice
             else:
