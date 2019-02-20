@@ -141,8 +141,9 @@ class Trajectory(MSONable):
         self.lattice, self.constant_lattice = self._combine_attribute(self.lattice, trajectory.lattice,
                                                                       np.shape(self.frac_coords)[0],
                                                                       np.shape(trajectory.frac_coords)[0])
-        self.site_properties = self._combine_attribute(self.site_properties, trajectory.site_properties,
-                                                       np.shape(self.frac_coords)[0], np.shape(trajectory.frac_coords))
+        if self.site_properties and trajectory.site_properties:
+            self.site_properties = self._combine_attribute(self.site_properties, trajectory.site_properties,
+                                                           np.shape(self.frac_coords)[0], np.shape(trajectory.frac_coords))
 
     def __iter__(self):
         for i in range(np.shape(self.frac_coords)[0]):
