@@ -277,10 +277,24 @@ class Trajectory(MSONable):
         return d
 
     @staticmethod
-    def _combine_attribute(attr_1, attr_2, len_1, len_2):
+    def _combine_lattice(attr_1, attr_2, len_1, len_2):
         """
         Helper function to combine trajectory properties such as site_properties or lattice
         """
+        if np.shape(attr_1) == (3, 3) and np.shape(attr_2) == (3, 3):
+            attribute = attr_1
+            attribute_changes = False
+        elif np.shape(attr_1) == 3 and np.shape(attr_2) == 3:
+            attribute = np.concatenate((attr_1, attr_2), axis=0)
+            attribute_changes = True
+        else:
+            attribute = [attr_1.copy()] * len_1 if type(attr_1) != list else attr_1.copy()
+            attribute.extend([attr_2.copy()] * len_2 if type(attr_2 != list) else attr_2.copy())
+            attribute_changes = True
+        return attribute, attribute_changes
+
+    @staticmethod
+    def _combine_site_props(attr_1, attr_2, len_1, len_2):
         if isinstance(attr_1, list) or isinstance(attr_2, list):
             attribute = np.concatenate((attr_1, attr_2), axis=0)
             attribute_changes = True
