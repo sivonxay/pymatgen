@@ -138,11 +138,11 @@ class Trajectory(MSONable):
         trajectory.to_positions()
 
         self.frac_coords = np.concatenate((self.frac_coords, trajectory.frac_coords), axis=0)
-        self.lattice, self.constant_lattice = self._combine_attribute(self.lattice, trajectory.lattice,
+        self.lattice, self.constant_lattice = self._combine_lattice(self.lattice, trajectory.lattice,
                                                                       np.shape(self.frac_coords)[0],
                                                                       np.shape(trajectory.frac_coords)[0])
         if self.site_properties and trajectory.site_properties:
-            self.site_properties = self._combine_attribute(self.site_properties, trajectory.site_properties,
+            self.site_properties = self._combine_site_props(self.site_properties, trajectory.site_properties,
                                                            np.shape(self.frac_coords)[0], np.shape(trajectory.frac_coords))
 
     def __iter__(self):
@@ -283,15 +283,15 @@ class Trajectory(MSONable):
         """
         if np.shape(attr_1) == (3, 3) and np.shape(attr_2) == (3, 3):
             attribute = attr_1
-            attribute_changes = False
+            attribute_constant = True
         elif np.shape(attr_1) == 3 and np.shape(attr_2) == 3:
             attribute = np.concatenate((attr_1, attr_2), axis=0)
-            attribute_changes = True
+            attribute_constant = False
         else:
             attribute = [attr_1.copy()] * len_1 if type(attr_1) != list else attr_1.copy()
             attribute.extend([attr_2.copy()] * len_2 if type(attr_2 != list) else attr_2.copy())
-            attribute_changes = True
-        return attribute, attribute_changes
+            attribute_constant = False
+        return attribute, attribute_constant
 
     @staticmethod
     def _combine_site_props(attr_1, attr_2, len_1, len_2):
