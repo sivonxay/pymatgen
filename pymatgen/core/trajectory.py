@@ -295,6 +295,10 @@ class Trajectory(MSONable):
 
     @staticmethod
     def _combine_site_props(attr_1, attr_2, len_1, len_2):
+        #TODO: Deal with no site properties on one trajectory gracefully
+        if attr_1 is None or attr_2 is None:
+            return None, False
+
         if isinstance(attr_1, list) or isinstance(attr_2, list):
             attribute = np.concatenate((attr_1, attr_2), axis=0)
             attribute_changes = True
