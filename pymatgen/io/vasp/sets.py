@@ -1730,7 +1730,7 @@ class MPMDSet(MPRelaxSet):
 
         if Element('H') in structure.species:
             defaults['POTIM'] = 0.5
-        defaults['NSW'] = defaults['NSW'] * 4
+            defaults['NSW'] = defaults['NSW'] * 4
 
         super(MPMDSet, self).__init__(structure, **kwargs)
 
