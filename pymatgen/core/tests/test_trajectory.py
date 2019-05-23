@@ -111,6 +111,14 @@ class TrajectoryTest(PymatgenTest):
 
         return all([i == j for i, j in zip(self.traj, traj_2)])
 
+    def test_xdatcar_write(self):
+        self.traj.write_Xdatcar(filename="traj_test_XDATCAR")
+
+        # Load trajectory from written xdatcar and compare to original
+
+        written_traj = Trajectory.from_file(os.path.join("./", "Traj_XDATCAR"))
+        self._check_traj_equality(self.traj, written_traj)
+
 
 if __name__ == '__main__':
     import unittest

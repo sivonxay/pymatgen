@@ -5,8 +5,10 @@
 from pymatgen.core.structure import Structure, Lattice
 from pymatgen.io.vasp.outputs import Xdatcar, Vasprun
 from monty.json import MSONable
+from monty.io import zopen
 from fnmatch import fnmatch
 import numpy as np
+import itertools
 import warnings
 import os
 
@@ -311,3 +313,97 @@ class Trajectory(MSONable):
                 attribute.extend([attr_2.copy()] * len_2 if type(attr_2 != list) else attr_2.copy())
                 attribute_changes = True
         return attribute, attribute_changes
+
+    def write_Xdatcar(self, filename="XDATCAR", system="unknown system", significant_figures=6):
+        """
+        Writes Xdatcar to a file. The supported kwargs are the same as those for
+        the Xdatcar_from_structs.get_string method and are passed through directly.
+
+        Args:
+            filename (str): name of file (It's prudent to end the filename with 'XDATCAR',
+                as most visualization and analysis software require this for autodetection)
+            system (str): Description of system
+            significant_figures (int): Significant figures in the output file
+        """
+        lines = []
+        format_str = "{{:.{0}f}}".format(significant_figures)
+        syms = [site.specie.symbol for site in self[0]]
+        site_symbols = [a[0] for a in itertools.groupby(syms)]
+        syms = [site.specie.symbol for site in self[0]]
+        natoms = [len(tuple(a[1])) for a in itertools.groupby(syms)]
+
+        # Ensure trajectory is in position form
+        self.to_positions()
+
+        for si, frac_coords in enumerate(self.frac_coords):
+            lines.extend([system, "1.0"])
+
+            if self.constant_lattice:
+                _lattice =self.lattice
+            else:
+                _lattice = self.lattice[si]
+
+            for latt_vec in _lattice:
+                lines.append(f'{" ".join([str(el) for el in latt_vec])}')
+
+            lines.append(" ".join(site_symbols))
+            lines.append(" ".join([str(x) for x in natoms]))
+
+            lines.append(f"Direct configuration=     {str(si + 1)}")
+
+            for (frac_coord, specie) in zip(frac_coords, self.species):
+                coords = frac_coord
+                line = f'{" ".join([format_str.format(c) for c in coords])} {specie}'
+                lines.append(line)
+
+        xdatcar_string = "\n".join(lines) + "\n"
+
+        with zopen(filename, "wt") as f:
+            f.write(xdatcar_string)
+
+    def write_Xdatcar5(self, filename="XDATCAR", system="unknown system", significant_figures=6):
+        """
+        Writes Xdatcar to a file. The supported kwargs are the same as those for
+        the Xdatcar_from_structs.get_string method and are passed through directly.
+
+        Args:
+            filename (str): name of file (It's prudent to end the filename with 'XDATCAR',
+                as most visualization and analysis software require this for autodetection)
+            system (str): Description of system
+            significant_figures (int): Significant figures in the output file
+        """
+        lines = []
+        format_str = "{{:.{0}f}}".format(significant_figures)
+        syms = [site.specie.symbol for site in self[0]]
+        site_symbols = [a[0] for a in itertools.groupby(syms)]
+        syms = [site.specie.symbol for site in self[0]]
+        natoms = [len(tuple(a[1])) for a in itertools.groupby(syms)]
+
+        # Ensure trajectory is in position form
+        self.to_positions()
+
+        for si, frac_coords in enumerate(self.frac_coords):
+            lines.extend([system, "1.0"])
+
+            if self.constant_lattice:
+                _lattice =self.lattice
+            else:
+                _lattice = self.lattice[si]
+
+            for latt_vec in _lattice:
+                lines.append(f'{" ".join([str(el) for el in latt_vec])}')
+
+            lines.append(" ".join(site_symbols))
+            lines.append(" ".join([str(x) for x in natoms]))
+
+            lines.append(f"Direct configuration=     {str(si + 1)}")
+
+            for (frac_coord, specie) in zip(frac_coords, self.species):
+                coords = frac_coord
+                line = f'{" ".join([format_str.format(c) for c in coords])} {specie}'
+                lines.append(line)
+
+        xdatcar_string = "\n".join(lines) + "\n"
+
+        with zopen(filename, "wt") as f:
+            f.write(xdatcar_string)
