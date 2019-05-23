@@ -1,6 +1,42 @@
 Change log
 ==========
 
+v2019.5.8
+---------
+* Numerous updates and improvements to defect classes (@dbroberg)
+* New API for MEGNET models, see http://megnet.crystals.ai (@shyuep)
+* Update to NMR symmeterization (@dongsenfo)
+* Change CIF indexing (@kmu)
+* Add BoltzTraP mode to NonSCF input sets (@utf)
+
+v2019.5.1
+---------
+* Small speeds to Structure.get_all_neighbors.
+* Big fixes for gulp_caller. (@kmu)
+* Plot fatbands from Lobster. (@jageo)
+* Speed up get_ir_mesh (@utf)
+* Parsing of plasma frequencies from Outcar.
+* Miscellaneous bug fixes.
+
+v2019.4.11
+----------
+* Improvements to MimimumDistanceNN (@jmmshn)
+* Improvements to Lobster. (@JaGeo)
+* Implement a metal warning for ISMEAR < 1 and NSW > 0.
+* Misc bug fixes to input sets, including detection of metal systems and 
+  checking for standardization. 
+
+v2019.3.27
+----------
+* Bug fixes for OrderDisorderComparator (@utf), custom k-points
+in MPNonSCFSet (@dyllamt), battery app (@jmmshn), MPSOCSet (@mkhorton),
+more
+* Improvements to COHP (@JaGeo)
+* Support to read WAVEDER files (@knc6)
+* Addition of van Arkel-Ketelaar triangle plots (@richardtran415)
+* Addition of optional user agent to MPRester API calls, see documentation
+for more information (@dwinston)
+
 v2019.3.13
 ----------
 * Streamlined Site, PeriodicSite, Molecule and Structure code by abandoning
