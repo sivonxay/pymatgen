@@ -45,9 +45,10 @@ class Interface(Structure):
     
     def __init__(self, lattice, species, coords,
                  sub_plane, film_plane,
-                 sub_init_cell, film_init_cell, site_properties,
+                 sub_init_cell, film_init_cell,
                  modified_sub_structure, modified_film_structure,
                  strained_sub_structure, strained_film_structure,
+                 site_properties,
                  validate_proximity=False,
                  coords_are_cartesian=False,
                  init_inplane_shift=None,
@@ -268,7 +269,7 @@ class Interface(Structure):
         struct_copy.sort(key=key, reverse=reverse)
         return struct_copy
 
-    def copy(self):
+    def copy(self, site_properties=None):
         """
         Convenience method to get a copy of the structure, with options to add
         site properties.
@@ -276,13 +277,17 @@ class Interface(Structure):
         Returns:
             A copy of the Interface.
         """
+        props = self.site_properties
+        if site_properties:
+            props.update(site_properties)
         return Interface(self.lattice, self.species_and_occu, self.frac_coords,
                          self.sub_plane, self.film_plane,
-                         self.sub_init_cell, self.film_init_cell, self.site_properties,
+                         self.sub_init_cell, self.film_init_cell,
                          self.modified_sub_structure, self.modified_film_structure,
                          self.strained_sub_structure, self.strained_film_structure,
-                         validate_proximity=False, coords_are_cartesian=False,
-                         init_inplane_shift=self.offset_vector[:2], charge=self.charge)
+                         site_properties=props, validate_proximity=False,
+                         coords_are_cartesian=False, init_inplane_shift=self.offset_vector[:2],
+                         charge=self.charge)
 
 
 class InterfaceBuilder:
@@ -710,9 +715,9 @@ class InterfaceBuilder:
                               orthogonal_structure.frac_coords,
                               slab_substrate.miller_index, slab_film.miller_index,
                               self.original_substrate_structure, self.original_film_structure,
-                              orthogonal_structure.site_properties,
                               unstrained_slab_substrate, unstrained_slab_film,
-                              slab_substrate, slab_film, init_inplane_shift=offset[1:])
+                              slab_substrate, slab_film, init_inplane_shift=offset[1:],
+                              site_properties=orthogonal_structure.site_properties,)
 
         return interface
                                
