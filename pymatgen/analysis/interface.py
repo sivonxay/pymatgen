@@ -52,7 +52,8 @@ class Interface(Structure):
                  validate_proximity=False,
                  coords_are_cartesian=False,
                  init_inplane_shift=None,
-                 charge=None):
+                 charge=None,
+                 to_unit_cell=False):
         """
         Makes an interface structure, a Structure object with additional
         information and methods pertaining to interfaces.
@@ -100,6 +101,7 @@ class Interface(Structure):
         
         super().__init__(
             lattice, species, coords, validate_proximity=validate_proximity,
+            to_unit_cell=to_unit_cell,
             coords_are_cartesian=coords_are_cartesian,
             site_properties=site_properties, charge=charge)
 
