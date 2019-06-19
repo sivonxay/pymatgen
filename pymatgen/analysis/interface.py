@@ -2,26 +2,18 @@
 # Copyright (c) Pymatgen Development Team.
 # Distributed under the terms of the MIT License.
 
-from pymatgen.analysis.elasticity.strain import Deformation
-from pymatgen.core.surface import (SlabGenerator,
-                                   get_symmetrically_distinct_miller_indices)
+from pymatgen.core.surface import SlabGenerator
 from pymatgen import Lattice, Structure
 from pymatgen.core.surface import Slab
 from itertools import product
 import numpy as np
-from pymatgen import Element
-from pymatgen.analysis.adsorption import AdsorbateSiteFinder, get_mi_vec
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pymatgen.util.coord import pbc_shortest_vectors
 from matplotlib import pyplot as plt
 from pymatgen.core.operations import SymmOp
 from matplotlib.lines import Line2D
 from pymatgen.io.vasp.inputs import Poscar
-from pymatgen.analysis.substrate_analyzer import (SubstrateAnalyzer,
-                                                  gen_sl_transform_matricies,
-                                                  rel_strain, rel_angle,
-                                                  fast_norm, vec_angle, vec_area,
-                                                  reduce_vectors, get_factors)
+from pymatgen.core.sites import PeriodicSite
+from pymatgen.analysis.substrate_analyzer import (SubstrateAnalyzer, reduce_vectors)
 import warnings
 
 """
@@ -96,7 +88,7 @@ class Interface(Structure):
             init_inplane_shift (length-2 list of float, in Cartesian coordinates):
                 The initial shift of the film relative to the substrate
                 in the plane of the interface.
-            charge (float, optional): overal charge of the structure
+            charge (float, optional): overall charge of the structure
         """
         
         super().__init__(
@@ -290,6 +282,37 @@ class Interface(Structure):
                          site_properties=props, validate_proximity=False,
                          coords_are_cartesian=False, init_inplane_shift=self.offset_vector[:2],
                          charge=self.charge)
+
+    def as_dict(self):
+        d = super().as_dict()
+        d["@module"] = self.__class__.__module__
+        d["@class"] = self.__class__.__name__
+        d["sub_plane"] = self.sub_plane
+        d["film_plane"] = self.film_plane
+        d["sub_init_cell"] = self.sub_init_cell
+        d["film_init_cell"] = self.film_init_cell
+        d["modified_sub_structure"] = self.modified_sub_structure
+        d["modified_film_structure"] = self.modified_film_structure
+        d["strained_sub_structure"] =self.strained_sub_structure
+        d["strained_film_structure"] = self.strained_film_structure
+        d['init_inplane_shift'] = self.ab_shift
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        lattice = Lattice.from_dict(d["lattice"])
+        sites = [PeriodicSite.from_dict(sd, lattice) for sd in d["sites"]]
+        s = Structure.from_sites(sites)
+
+        return Interface(
+            lattice=lattice,
+            species=s.species_and_occu, coords=s.frac_coords,
+            sub_plane=d["sub_plane"], film_plane=d["film_plane"],
+            sub_init_cell=d["sub_init_cell"], film_init_cell=d["film_init_cell"],
+            modified_sub_structure=d["modified_sub_structure"], modified_film_structure=d["modified_film_structure"],
+            strained_sub_structure=d["strained_sub_structure"], strained_film_structure=d["strained_film_structure"],
+            site_properties=s.site_properties, init_inplane_shift=d["init_inplane_shift"]
+        )
 
 
 class InterfaceBuilder:
