@@ -428,12 +428,12 @@ class InterfaceBuilder:
         """
         self.get_oriented_slabs(lowest=True, film_millers=film_millers,
                                 substrate_millers=substrate_millers, film_layers=film_layers,
-                                substrate_layers=substrate_layers)
+                                substrate_layers=substrate_layers, **kwargs)
 
-        self.combine_slabs(**kwargs)
+        self.combine_slabs()
         return
 
-    def get_oriented_slabs(self, film_layers=3, substrate_layers=3, match_index=0, **kwargs):
+    def get_oriented_slabs(self, film_layers=3, substrate_layers=3, match=None, **kwargs):
         """
         Get a list of oriented slabs for constructing interfaces and put them
         in self.film_structures, self.substrate_structures, self.modified_film_structures,
@@ -443,22 +443,22 @@ class InterfaceBuilder:
         Args:
             film_layers (int): number of layers of film to include in Interface structures.
             substrate_layers (int): number of layers of substrate to include in Interface structures.
-            match_index (int): ZSL match from which to construct slabs.
+            match (int): ZSL match dictionary from which to construct slabs.
         """
-        self.match_index = match_index
-        self.substrate_layers = substrate_layers
-        self.film_layers = film_layers
+        if match is None:
+            self.substrate_layers = substrate_layers
+            self.film_layers = film_layers
 
-        if 'zslgen' in kwargs.keys():
-            sa = SubstrateAnalyzer(zslgen=kwargs.get('zslgen'))
-            del kwargs['zslgen']
-        else:
-            sa = SubstrateAnalyzer()
+            if 'zslgen' in kwargs.keys():
+                sa = SubstrateAnalyzer(zslgen=kwargs.get('zslgen'))
+                del kwargs['zslgen']
+            else:
+                sa = SubstrateAnalyzer()
 
-        # Generate all possible interface matches
-        self.matches = list(sa.calculate(self.original_film_structure, self.original_substrate_structure, **kwargs))
-        match = self.matches[match_index]
-        print(match)
+            # Generate all possible interface matches
+            self.matches = list(sa.calculate(self.original_film_structure, self.original_substrate_structure, **kwargs))
+            self.matches = sorted(self.matches, key = lambda x: x['match_area'])
+            match = self.matches[0]
 
         # Generate substrate slab and align x axis to (100) and slab normal to (001)
         ## Get no-vacuum structure for strained bulk calculation
