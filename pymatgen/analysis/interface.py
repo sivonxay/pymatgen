@@ -395,35 +395,24 @@ class InterfaceBuilder:
         Write all of the structures relevant for
         the interface calculation to VASP POSCAR files.
         """
+        fmt = "POSCAR"
 
-        _poscar = Poscar(self.original_substrate_structure)
-        _poscar.write_file('bulk_substrate_POSCAR')
+        self.original_substrate_structure.to(fmt, f'bulk_substrate_POSCAR')
+        self.original_film_structure.to(fmt, f'bulk_film_POSCAR')
+        self.strained_substrate.to(fmt, f'strained_substrate_POSCAR')
+        self.strained_film.to(fmt, f'strained_film_POSCAR')
 
+        for i, struct in enumerate(self.modified_substrate_structures):
+            struct.to(fmt, 'slab_substrate_%d_POSCAR'%i)
 
-        _poscar = Poscar(self.original_film_structure)
-        _poscar.write_file('bulk_film_POSCAR')
-
-        _poscar = Poscar(self.strained_substrate)
-        _poscar.write_file('strained_substrate_POSCAR')
-
-        _poscar = Poscar(self.strained_film)
-        _poscar.write_file('strained_film_POSCAR')
-
-        for i, interface in enumerate(self.modified_substrate_structures):
-            _poscar = Poscar(interface)
-            _poscar.write_file('slab_substrate_%d_POSCAR'%i)
-
-        for i, interface in enumerate(self.modified_film_structures):
-            _poscar = Poscar(interface)
-            _poscar.write_file('slab_film_%d_POSCAR' % i)
+        for i, struct in enumerate(self.modified_film_structures):
+            struct.to(fmt, 'slab_film_%d_POSCAR' % i)
             
-        for i, interface in enumerate(self.film_structures):
-            _poscar = Poscar(interface)
-            _poscar.write_file('slab_unit_film_%d_POSCAR' % i)
+        for i, struct in enumerate(self.film_structures):
+            struct.to('slab_unit_film_%d_POSCAR' % i)
 
-        for label, interface in zip(self.interface_labels, self.interfaces):
-            _poscar = Poscar(interface)
-            _poscar.write_file('interface_%s_POSCAR' % label.replace("/", "-"))
+        for label, struct in zip(self.interface_labels, self.interfaces):
+            struct.to(fmt, 'interface_%s_POSCAR' % label.replace("/", "-"))
         return
 
     def generate_interfaces(self, film_millers=None, substrate_millers=None, film_layers=3, substrate_layers=3,
