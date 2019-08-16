@@ -264,7 +264,7 @@ class Interface(Structure):
                          self.strained_sub_structure, self.strained_film_structure,
                          validate_proximity=False, coords_are_cartesian=False,
                          init_inplane_shift=self.offset_vector[:2], charge=self.charge,
-                         site_properties=self.site_properties)
+                         site_properties=props)
 
     def get_sorted_structure(self, key=None, reverse=False):
         """
@@ -409,7 +409,7 @@ class InterfaceBuilder:
             struct.to(fmt, 'slab_film_%d_POSCAR' % i)
             
         for i, struct in enumerate(self.film_structures):
-            struct.to('slab_unit_film_%d_POSCAR' % i)
+            struct.to(fmt, 'slab_unit_film_%d_POSCAR' % i)
 
         for label, struct in zip(self.interface_labels, self.interfaces):
             struct.to(fmt, 'interface_%s_POSCAR' % label.replace("/", "-"))
