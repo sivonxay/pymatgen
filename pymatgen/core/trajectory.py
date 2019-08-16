@@ -161,7 +161,7 @@ class Trajectory(MSONable):
         Return:
             (Trajectory, Structure) Subset of trajectory
         """
-        if isinstance(frames, int) and frames < self.frac_coords.shape[0]:
+        if isinstance(frames, int) and frames < len(self):
             lattice = self.lattice if self.constant_lattice else self.lattice[frames]
             site_properties = self.site_properties[frames] if self.site_properties else None
             return Structure(Lattice(lattice), self.species, self.frac_coords[frames], site_properties=site_properties,
@@ -176,7 +176,7 @@ class Trajectory(MSONable):
                 raise Exception('Given accessor is not of type int, slice, tuple, list, or array')
 
         if (isinstance(frames, list) or isinstance(frames, np.ndarray)) and \
-                (np.asarray([frames]) < self.frac_coords.shape[0]).all():
+                (np.asarray([frames]) < len(self)).all():
             if self.constant_lattice:
                 lattice = self.lattice
             else:
